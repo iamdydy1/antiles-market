@@ -1,3 +1,4 @@
+import SiteHeader from "@/components/SiteHeader";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -11,10 +12,7 @@ export default async function Home() {
 
   return (
     <main>
-      <header className="topbar">
-        <a className="brand" href="/" aria-label="Antilles Market — Accueil"><span className="brandMark">AM</span><span>Antilles Market</span></a>
-        <nav className="headerActions" aria-label="Navigation principale"><a className="ghostButton" href="/favoris">♡ Favoris</a><a className="ghostButton" href="/messages">💬 Messages</a><a className="ghostButton" href="/compte">Mon compte</a><a className="primaryButton" href="/deposer">+ Déposer une annonce</a></nav>
-      </header>
+      <SiteHeader />
 
       <section className="hero">
         <div className="heroOverlay" />
