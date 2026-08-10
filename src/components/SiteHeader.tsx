@@ -19,6 +19,7 @@ export default async function SiteHeader() {
     </div>
     <nav className={styles.desktopNav} aria-label={locale === "fr" ? "Navigation principale" : "Main navigation"}>
       <LanguageSwitcher locale={locale} />
+      {user && <a href="/offres">💶 {locale === "fr" ? "Mes offres" : "My offers"}</a>}
       <a href="/favoris">♡ {t.nav.favorites}</a>
       <a href="/messages">💬 {t.nav.messages}</a>
       <a href={user ? "/compte" : "/connexion"}>{user ? t.nav.account : t.nav.login}</a>
