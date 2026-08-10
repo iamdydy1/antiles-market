@@ -46,10 +46,13 @@ export function verifySessionToken(token?: string | null): SessionPayload | null
   }
 }
 
+const appUrl = process.env.APP_URL ?? "";
+const useSecureCookie = appUrl.startsWith("https://");
+
 export const sessionCookieOptions = {
   httpOnly: true,
   sameSite: "lax" as const,
-  secure: process.env.NODE_ENV === "production",
+  secure: useSecureCookie,
   path: "/",
   maxAge: SESSION_TTL_SECONDS,
 };
