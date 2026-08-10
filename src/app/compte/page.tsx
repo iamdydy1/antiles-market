@@ -50,7 +50,7 @@ export default async function AccountPage() {
           <a className="active" href="/compte">👤 Mon profil</a>
           <a href="#">📦 Mes annonces</a>
           <a href="#">♡ Mes favoris</a>
-          <a href="#">💬 Messages</a>
+          <a href="/messages">💬 Messages</a>
           <a href="#">⚙️ Paramètres</a>
           <LogoutButton />
         </aside>
