@@ -36,7 +36,7 @@ export default async function AccountPage() {
           <a href="/mes-annonces">📦 Mes annonces</a>
           <a href="/favoris">♡ Mes favoris</a>
           <a href="/messages">💬 Messages</a>
-          <a href="#">⚙️ Paramètres</a>
+          <a href="/parametres">⚙️ Paramètres</a>
           <LogoutButton />
         </aside>
         <section className="accountContent">
