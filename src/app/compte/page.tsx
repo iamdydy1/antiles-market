@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import LogoutButton from "@/components/LogoutButton";
+import ProfileEditor from "@/components/ProfileEditor";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -45,7 +46,7 @@ export default async function AccountPage() {
             <a href="/messages"><strong>{user._count.messages}</strong><span>Messages envoyés</span></a>
           </div>
           <article className="profileCard">
-            <div className="profileCardHead"><div><span className="eyebrow">Informations personnelles</span><h2>Mon profil</h2></div><button className="secondaryButton" type="button">Modifier</button></div>
+            <div className="profileCardHead"><div><span className="eyebrow">Informations personnelles</span><h2>Mon profil</h2></div><ProfileEditor displayName={user.displayName} phone={user.phone} /></div>
             <dl className="profileDetails"><div><dt>Nom affiché</dt><dd>{user.displayName}</dd></div><div><dt>E-mail</dt><dd>{user.email}</dd></div><div><dt>Téléphone</dt><dd>{user.phone ?? "Non renseigné"}</dd></div><div><dt>Type de compte</dt><dd>{user.role === "USER" ? "Particulier" : user.role}</dd></div><div><dt>Membre depuis</dt><dd>{new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(user.createdAt)}</dd></div></dl>
           </article>
         </section>
