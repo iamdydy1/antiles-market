@@ -28,6 +28,11 @@ Créer une plateforme moderne permettant aux particuliers et professionnels de p
 - Jusqu'à 8 photos par annonce (JPG, PNG, WebP)
 - Stockage des photos dans le volume Docker `/app/uploads`
 - Fiche d'annonce avec vendeur, territoire, catégorie et galerie
+- Messagerie privée intégrée depuis une annonce
+- Boîte de réception des conversations
+- Envoi et lecture des messages
+- Rafraîchissement automatique des conversations ouvertes
+- Suivi de lecture avec `lastReadAt`
 - Route de santé `/api/health`
 - CI GitHub pour contrôler la compilation
 
@@ -36,7 +41,7 @@ Créer une plateforme moderne permettant aux particuliers et professionnels de p
 - Recherche et filtres avancés
 - Localisation par ville
 - Favoris fonctionnels
-- Messagerie privée en temps réel
+- WebSocket / Redis pour notifications push instantanées du chat
 - Gestion complète des annonces depuis le compte
 - Signalement et modération
 - Administration
