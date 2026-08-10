@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./marketplace.css";
+import "./admin.css";
 
 export const metadata: Metadata = {
   title: "Antilles Market — Petites annonces des Antilles",
