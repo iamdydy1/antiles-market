@@ -2,84 +2,54 @@
 
 Marketplace de petites annonces pensée pour les Antilles et les îles voisines.
 
-## Objectif
-
-Créer une plateforme moderne permettant aux particuliers et professionnels de publier, rechercher et gérer des annonces, puis de discuter directement grâce à une messagerie intégrée.
-
 ## Stack
+Next.js 16, React 19, TypeScript, PostgreSQL, Prisma 7, Redis, Docker Compose.
 
-- Next.js 16 + React 19 + TypeScript
-- PostgreSQL
-- Prisma ORM 7
-- Redis
-- Docker / Docker Compose
-- Nginx en reverse proxy sur le serveur Unraid
+## V1 de test disponible sur `develop`
+- Comptes, connexion/déconnexion, sessions HttpOnly
+- Annonces, prix/devise, jusqu'à 8 photos
+- 23 territoires, villes/communes de départ et sous-catégories
+- Recherche par mot-clé, île, ville, catégorie et prix
+- Favoris et profils vendeurs publics
+- Messagerie privée intégrée
+- Gestion vendeur : modifier, réserver, vendre, archiver, republier, retirer
+- Signalements, modération, administration utilisateurs, rôles et statistiques
+- Rate limiting Redis sur connexion/inscription et headers HTTP de sécurité
+- Healthcheck `/api/health`
 
-## Fonctionnalités déjà développées sur `develop`
+## Test sur Unraid
+Le compose lance lui-même PostgreSQL et Redis : vous n'avez pas besoin de les installer séparément.
 
-- Identité visuelle bleu marine + orange, responsive mobile
-- Inscription, connexion et déconnexion
-- Mots de passe hashés et sessions en cookie HttpOnly
-- Espace utilisateur protégé
-- Modèles PostgreSQL pour utilisateurs, annonces, favoris, conversations, messages et signalements
-- Catalogue de départ : 23 territoires / îles et 12 grandes catégories
-- Dépôt d'annonce authentifié
-- Prix et devise adaptés au territoire
-- Jusqu'à 8 photos par annonce (JPG, PNG, WebP)
-- Stockage des photos dans le volume Docker `/app/uploads`
-- Fiche d'annonce avec vendeur, territoire, catégorie et galerie
-- Messagerie privée intégrée depuis une annonce
-- Boîte de réception des conversations
-- Envoi et lecture des messages
-- Rafraîchissement automatique des conversations ouvertes
-- Suivi de lecture avec `lastReadAt`
-- Favoris : ajout, retrait et page Mes favoris
-- Recherche PostgreSQL par mot-clé
-- Filtres par île, catégorie et fourchette de prix
-- Tri par date et prix
-- Page Mes annonces avec statuts, vues, favoris et conversations
-- Modification d'annonce
-- Statuts réservée / vendue / archivée / republiée
-- Retrait d'annonce par le vendeur
-- Signalement d'annonce avec motif et détails
-- Panneau de modération protégé par rôles
-- Gestion des signalements : résoudre, rejeter, retirer l'annonce
-- Administration utilisateurs : recherche, bannissement et débannissement
-- Gestion des rôles par administrateur avec protections du dernier admin actif
-- Statistiques admin : utilisateurs, bannis, annonces, ventes, messages, conversations et signalements
-- Accueil relié aux vraies catégories, vrais territoires et annonces publiées
-- Route de santé `/api/health`
-- CI GitHub pour contrôler la compilation
+```bash
+cd /mnt/user/appdata
+git clone -b develop https://github.com/iamdydy1/antiles-market.git
+cd antiles-market
+cp .env.example .env
+nano .env
+```
 
-## Fonctionnalités à poursuivre
+Dans `.env`, remplacez au minimum `YOUR_UNRAID_IP`, `CHANGE_THIS_DATABASE_PASSWORD` (aux deux endroits) et `CHANGE_THIS_TO_A_LONG_RANDOM_SECRET`.
 
-- Localisation par ville
-- WebSocket / Redis pour notifications push instantanées du chat
-- Paramètres et modification du profil utilisateur
-- Notifications
-- Comptes professionnels
-- Mise en avant d'annonces
-- Sécurité et limitation de débit renforcées
-- Préparation du premier déploiement de test Unraid
-
-## Démarrage avec Docker
-
-1. Copier `.env.example` vers `.env`.
-2. Remplacer `POSTGRES_PASSWORD` et `AUTH_SECRET` par des valeurs fortes et uniques.
-3. Initialiser la base puis charger le catalogue avec Prisma.
-4. Lancer la stack Docker.
-
+Puis :
 ```bash
 docker compose up -d --build
 ```
 
-Le site sera disponible sur `http://IP_DU_SERVEUR:3000`.
+Le conteneur `antiles-market-setup` crée/synchronise les tables et charge automatiquement le catalogue au premier lancement. Quand il termine avec le code 0, c'est normal. Le site est ensuite disponible sur `http://IP_UNRAID:3000` et son contrôle de santé sur `http://IP_UNRAID:3000/api/health`.
 
-La route de contrôle est disponible sur `http://IP_DU_SERVEUR:3000/api/health`.
+Commandes utiles :
+```bash
+docker compose ps
+docker compose logs -f app
+docker compose logs setup
+docker compose down
+```
+
+Les données persistent dans `/mnt/user/appdata/antilles-market/` (PostgreSQL, Redis et uploads).
+
+## Important avant ouverture Internet
+Cette branche est une V1 de test local/LAN. Avant une ouverture publique : HTTPS + domaine/Nginx, e-mails de vérification/récupération, politique de sauvegarde, tests de sécurité supplémentaires, CGU/confidentialité et monitoring.
 
 ## Branches
-
-- `main` : version stable
-- `develop` : développement en cours
-
-La Pull Request de développement reste en brouillon jusqu'à ce que la V1 soit suffisamment stable pour être fusionnée dans `main`.
+- `main` : stable
+- `develop` : développement/test
