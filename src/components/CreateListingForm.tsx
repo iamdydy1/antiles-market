@@ -10,6 +10,7 @@ export default function CreateListingForm({ territories, categories }: { territo
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [territoryId, setTerritoryId] = useState(territories[0]?.id ?? "");
+  const [photoCount, setPhotoCount] = useState(0);
   const currency = useMemo(() => territories.find((item) => item.id === territoryId)?.currency ?? "EUR", [territories, territoryId]);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -35,6 +36,19 @@ export default function CreateListingForm({ territories, categories }: { territo
         setError(data.error ?? "Impossible de publier l’annonce.");
         return;
       }
+
+      const photos = form.getAll("photos").filter((value): value is File => value instanceof File && value.size > 0);
+      if (photos.length) {
+        const photoForm = new FormData();
+        photos.forEach((photo) => photoForm.append("photos", photo));
+        const photoResponse = await fetch(`/api/listings/${data.listing.id}/images`, { method: "POST", body: photoForm });
+        if (!photoResponse.ok) {
+          const photoError = await photoResponse.json();
+          setError(`L’annonce a été créée, mais les photos n’ont pas pu être enregistrées : ${photoError.error ?? "erreur inconnue"}`);
+          return;
+        }
+      }
+
       router.push(`/annonces/${data.listing.slug}`);
       router.refresh();
     } catch {
@@ -82,9 +96,24 @@ export default function CreateListingForm({ territories, categories }: { territo
         </label>
       </div>
 
-      <div className="listingFormSection photoStepPreview">
-        <div className="formSectionTitle"><span>2</span><div><h2>Photos</h2><p>Les photos seront ajoutées dans la prochaine étape du développement.</p></div></div>
-        <div className="photoDropPlaceholder"><strong>📷 Photos de l’annonce</strong><span>Jusqu’à plusieurs photos, avec une photo principale.</span></div>
+      <div className="listingFormSection">
+        <div className="formSectionTitle"><span>2</span><div><h2>Photos</h2><p>Ajoutez jusqu’à 8 photos. La première sera la photo principale.</p></div></div>
+        <label className="photoDropPlaceholder photoUploadInput">
+          <strong>📷 Ajouter des photos</strong>
+          <span>JPG, PNG ou WebP · 10 Mo maximum par photo</span>
+          <span className="photoCount">{photoCount ? `${photoCount} photo${photoCount > 1 ? "s" : ""} sélectionnée${photoCount > 1 ? "s" : ""}` : "Aucune photo sélectionnée"}</span>
+          <input name="photos" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => {
+            const count = event.target.files?.length ?? 0;
+            if (count > 8) {
+              setError("Vous pouvez sélectionner 8 photos maximum.");
+              event.target.value = "";
+              setPhotoCount(0);
+              return;
+            }
+            setError("");
+            setPhotoCount(count);
+          }} />
+        </label>
       </div>
 
       {error && <div className="authError" role="alert">{error}</div>}
