@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useRef, useState } from "react";
+import type { Locale } from "@/lib/i18n";
 
 type Message = {
   id: string;
@@ -10,11 +11,15 @@ type Message = {
   sender: { displayName: string };
 };
 
-export default function ChatWindow({ conversationId, currentUserId, initialMessages }: { conversationId: string; currentUserId: string; initialMessages: Message[] }) {
+export default function ChatWindow({ conversationId, currentUserId, initialMessages, locale }: { conversationId: string; currentUserId: string; initialMessages: Message[]; locale: Locale }) {
   const [messages, setMessages] = useState(initialMessages);
   const [body, setBody] = useState("");
   const [sending, setSending] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const dateLocale = locale === "fr" ? "fr-FR" : "en-US";
+  const copy = locale === "fr"
+    ? { start: "Démarrez la conversation", startText: "Posez une question au vendeur à propos de cette annonce.", you: "Vous", placeholder: "Écrivez votre message…", send: "Envoyer" }
+    : { start: "Start the conversation", startText: "Ask the seller a question about this listing.", you: "You", placeholder: "Write your message…", send: "Send" };
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
@@ -26,8 +31,8 @@ export default function ChatWindow({ conversationId, currentUserId, initialMessa
         if (!response.ok) return;
         const data = await response.json();
         if (!cancelled) setMessages(data.messages);
-      } catch {
-        // Keep the conversation usable during temporary network errors.
+      } catch (error) {
+        console.debug("message refresh skipped", error);
       }
     }
     const timer = window.setInterval(refreshMessages, 3500);
@@ -58,16 +63,16 @@ export default function ChatWindow({ conversationId, currentUserId, initialMessa
   return (
     <section className="chatPanel">
       <div className="chatMessages">
-        {messages.length === 0 && <div className="emptyChat"><span>💬</span><strong>Démarrez la conversation</strong><p>Posez une question au vendeur à propos de cette annonce.</p></div>}
+        {messages.length === 0 && <div className="emptyChat"><span>💬</span><strong>{copy.start}</strong><p>{copy.startText}</p></div>}
         {messages.map((message) => {
           const mine = message.senderId === currentUserId;
-          return <div className={`chatBubbleRow ${mine ? "mine" : "theirs"}`} key={message.id}><div className="chatBubble"><small>{mine ? "Vous" : message.sender.displayName}</small><p>{message.body}</p><time>{new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(new Date(message.createdAt))}</time></div></div>;
+          return <div className={`chatBubbleRow ${mine ? "mine" : "theirs"}`} key={message.id}><div className="chatBubble"><small>{mine ? copy.you : message.sender.displayName}</small><p>{message.body}</p><time>{new Intl.DateTimeFormat(dateLocale, { hour: "2-digit", minute: "2-digit" }).format(new Date(message.createdAt))}</time></div></div>;
         })}
         <div ref={endRef} />
       </div>
       <form className="chatComposer" onSubmit={send}>
-        <textarea value={body} onChange={(event) => setBody(event.target.value)} maxLength={4000} placeholder="Écrivez votre message…" rows={2} />
-        <button type="submit" disabled={sending || !body.trim()}>{sending ? "…" : "Envoyer"}</button>
+        <textarea value={body} onChange={(event) => setBody(event.target.value)} maxLength={4000} placeholder={copy.placeholder} rows={2} />
+        <button type="submit" disabled={sending || !body.trim()}>{sending ? "…" : copy.send}</button>
       </form>
     </section>
   );
