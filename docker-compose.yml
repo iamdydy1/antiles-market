@@ -37,12 +37,12 @@ services:
       - |
         attempt=1
         until npx prisma db push; do
-          if [ "$attempt" -ge 10 ]; then
+          if [ "$$attempt" -ge 10 ]; then
             echo "Database setup failed after 10 attempts."
             exit 1
           fi
-          echo "Database not ready yet (attempt $attempt/10), retrying in 5s..."
-          attempt=$((attempt + 1))
+          echo "Database not ready yet (attempt $$attempt/10), retrying in 5s..."
+          attempt=$$((attempt + 1))
           sleep 5
         done
         npx tsx prisma/seed.ts
