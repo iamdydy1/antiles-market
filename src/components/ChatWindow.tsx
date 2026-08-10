@@ -18,6 +18,22 @@ export default function ChatWindow({ conversationId, currentUserId, initialMessa
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
+  useEffect(() => {
+    let cancelled = false;
+    async function refreshMessages() {
+      try {
+        const response = await fetch(`/api/conversations/${conversationId}/messages`, { cache: "no-store" });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!cancelled) setMessages(data.messages);
+      } catch {
+        // Keep the conversation usable during temporary network errors.
+      }
+    }
+    const timer = window.setInterval(refreshMessages, 3500);
+    return () => { cancelled = true; window.clearInterval(timer); };
+  }, [conversationId]);
+
   async function send(event: FormEvent) {
     event.preventDefault();
     const text = body.trim();
