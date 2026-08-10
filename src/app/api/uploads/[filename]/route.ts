@@ -1,5 +1,4 @@
 import { readFile } from "node:fs/promises";
-import path from "node:path";
 import { NextResponse } from "next/server";
 
 const CONTENT_TYPES: Record<string, string> = {
@@ -9,6 +8,9 @@ const CONTENT_TYPES: Record<string, string> = {
   webp: "image/webp",
 };
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 export async function GET(_request: Request, { params }: { params: Promise<{ filename: string }> }) {
   const { filename } = await params;
   if (!/^[a-f0-9-]+\.(jpg|jpeg|png|webp)$/i.test(filename)) {
@@ -16,8 +18,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ fil
   }
 
   try {
-    const uploadDir = process.env.UPLOAD_DIR ?? "/app/uploads";
-    const data = await readFile(path.join(uploadDir, filename));
+    const uploadDir = process.env.UPLOAD_DIR || "/app/uploads";
+    const safePath = `${uploadDir.replace(/\/$/, "")}/${filename}`;
+    const data = await readFile(safePath);
     const extension = filename.split(".").pop()?.toLowerCase() ?? "jpg";
     return new NextResponse(data, {
       headers: {
