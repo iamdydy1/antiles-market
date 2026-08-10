@@ -15,16 +15,29 @@ Créer une plateforme moderne permettant aux particuliers et professionnels de p
 - Docker / Docker Compose
 - Nginx en reverse proxy sur le serveur Unraid
 
-## Fonctionnalités prévues
+## Fonctionnalités déjà développées sur `develop`
 
-- Comptes utilisateurs
-- Profils vendeurs
-- Annonces avec photos
-- Catégories et sous-catégories
-- Recherche et filtres
-- Filtrage par île / territoire / ville
-- Favoris
-- Messagerie privée
+- Identité visuelle bleu marine + orange, responsive mobile
+- Inscription, connexion et déconnexion
+- Mots de passe hashés et sessions en cookie HttpOnly
+- Espace utilisateur protégé
+- Modèles PostgreSQL pour utilisateurs, annonces, favoris, conversations, messages et signalements
+- Catalogue de départ : 23 territoires / îles et 12 grandes catégories
+- Dépôt d'annonce authentifié
+- Prix et devise adaptés au territoire
+- Jusqu'à 8 photos par annonce (JPG, PNG, WebP)
+- Stockage des photos dans le volume Docker `/app/uploads`
+- Fiche d'annonce avec vendeur, territoire, catégorie et galerie
+- Route de santé `/api/health`
+- CI GitHub pour contrôler la compilation
+
+## Fonctionnalités à poursuivre
+
+- Recherche et filtres avancés
+- Localisation par ville
+- Favoris fonctionnels
+- Messagerie privée en temps réel
+- Gestion complète des annonces depuis le compte
 - Signalement et modération
 - Administration
 - Comptes professionnels
@@ -34,8 +47,9 @@ Créer une plateforme moderne permettant aux particuliers et professionnels de p
 ## Démarrage avec Docker
 
 1. Copier `.env.example` vers `.env`.
-2. Remplacer les mots de passe et `JWT_SECRET` par des valeurs fortes.
-3. Lancer :
+2. Remplacer `POSTGRES_PASSWORD` et `AUTH_SECRET` par des valeurs fortes et uniques.
+3. Initialiser la base puis charger le catalogue avec Prisma.
+4. Lancer la stack Docker.
 
 ```bash
 docker compose up -d --build
@@ -50,6 +64,4 @@ La route de contrôle est disponible sur `http://IP_DU_SERVEUR:3000/api/health`.
 - `main` : version stable
 - `develop` : développement en cours
 
-## État actuel
-
-Le socle technique, Docker, la base de données et la première page d'accueil responsive sont en cours de construction.
+La Pull Request de développement reste en brouillon jusqu'à ce que la V1 soit suffisamment stable pour être fusionnée dans `main`.
