@@ -10,7 +10,7 @@ export default async function Home() {
   const dateLocale = locale === "fr" ? "fr-FR" : "en-US";
   const [territories, categories, recentListings] = await Promise.all([
     prisma.territory.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.category.findMany({ where: { isActive: true, parentId: null }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], take: 8, select: { id: true, name: true, slug: true, icon: true } }),
+    prisma.category.findMany({ where: { isActive: true, parentId: null }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], select: { id: true, name: true, slug: true, icon: true } }),
     prisma.listing.findMany({ where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" }, take: 6, include: { territory: { select: { name: true } }, images: { orderBy: { position: "asc" }, take: 1 } } }),
   ]);
 
