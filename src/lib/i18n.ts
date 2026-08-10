@@ -27,9 +27,22 @@ export const dictionaries = {
   },
 } as const;
 
+const categoryEnglish: Record<string, string> = {
+  vehicules: "Vehicles", immobilier: "Property", emploi: "Jobs", multimedia: "Electronics", "maison-jardin": "Home & Garden", "mode-beaute": "Fashion & Beauty", "loisirs-sport": "Leisure & Sports", "evenements-sorties": "Events & Going Out", services: "Services", animaux: "Pets", "materiel-professionnel": "Professional Equipment", "enfance-bebe": "Kids & Baby", autres: "Other",
+  "vehicules-voitures": "Cars", "vehicules-motos-scooters": "Motorcycles & Scooters", "vehicules-utilitaires": "Commercial Vehicles", "vehicules-pieces-accessoires": "Parts & Accessories", "vehicules-bateaux": "Boats",
+  "immobilier-locations": "Rentals", "immobilier-ventes-immobilieres": "Property for Sale", "immobilier-locations-saisonnieres": "Vacation Rentals", "immobilier-terrains": "Land", "immobilier-bureaux-commerces": "Offices & Retail",
+  "emploi-offres-d-emploi": "Job Offers", "emploi-demandes-d-emploi": "Job Seekers",
+  "multimedia-telephones": "Phones", "multimedia-informatique": "Computers", "multimedia-tv-audio": "TV & Audio", "multimedia-jeux-video": "Video Games", "multimedia-photo-video": "Photo & Video",
+  "maison-jardin-meubles": "Furniture", "maison-jardin-electromenager": "Appliances", "maison-jardin-decoration": "Decor", "maison-jardin-bricolage": "DIY", "maison-jardin-jardin": "Garden",
+  "mode-beaute-vetements": "Clothing", "mode-beaute-chaussures": "Shoes", "mode-beaute-accessoires": "Accessories", "mode-beaute-beaute": "Beauty",
+  "loisirs-sport-sport": "Sports", "loisirs-sport-velos": "Bicycles", "loisirs-sport-musique": "Music", "loisirs-sport-livres": "Books", "loisirs-sport-billetterie": "Tickets",
+  "evenements-sorties-fetes-soirees": "Parties & Nightlife", "evenements-sorties-sports-competitions": "Sports & Competitions", "evenements-sorties-concerts-spectacles": "Concerts & Shows", "evenements-sorties-culture-traditions": "Culture & Traditions", "evenements-sorties-food-evenements-culinaires": "Food & Culinary Events", "evenements-sorties-loisirs-sorties": "Activities & Outings", "evenements-sorties-famille-enfants": "Family & Kids", "evenements-sorties-evenements-professionnels": "Business Events", "evenements-sorties-billets-reservations": "Tickets & Reservations", "evenements-sorties-autres-evenements": "Other Events",
+};
+
 export async function getLocale(): Promise<Locale> {
   const cookieStore = await cookies();
   return cookieStore.get("antilles_locale")?.value === "en" ? "en" : "fr";
 }
 
 export function getDictionary(locale: Locale) { return dictionaries[locale]; }
+export function categoryLabel(locale: Locale, slug: string, fallback: string) { return locale === "en" ? (categoryEnglish[slug] ?? fallback) : fallback; }
