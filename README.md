@@ -33,16 +33,21 @@ Créer une plateforme moderne permettant aux particuliers et professionnels de p
 - Envoi et lecture des messages
 - Rafraîchissement automatique des conversations ouvertes
 - Suivi de lecture avec `lastReadAt`
+- Favoris : ajout, retrait et page Mes favoris
+- Recherche PostgreSQL par mot-clé
+- Filtres par île, catégorie et fourchette de prix
+- Tri par date et prix
+- Page Mes annonces avec statuts, vues, favoris et conversations
+- Accueil relié aux vraies catégories, vrais territoires et annonces publiées
 - Route de santé `/api/health`
 - CI GitHub pour contrôler la compilation
 
 ## Fonctionnalités à poursuivre
 
-- Recherche et filtres avancés
+- Modification et suppression d'annonces
+- Passage d'une annonce en réservée / vendue / archivée
 - Localisation par ville
-- Favoris fonctionnels
 - WebSocket / Redis pour notifications push instantanées du chat
-- Gestion complète des annonces depuis le compte
 - Signalement et modération
 - Administration
 - Comptes professionnels
