@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import ContactSellerButton from "@/components/ContactSellerButton";
 import { prisma } from "@/lib/prisma";
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -23,7 +24,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
     <main className="listingDetailPage">
       <header className="accountTopbar">
         <a className="brand" href="/"><span className="brandMark">AM</span><span>Antilles Market</span></a>
-        <nav className="headerActions"><a className="ghostButton" href="/compte">Mon compte</a><a className="primaryButton" href="/deposer">+ Déposer</a></nav>
+        <nav className="headerActions"><a className="ghostButton" href="/messages">Messages</a><a className="ghostButton" href="/compte">Mon compte</a><a className="primaryButton" href="/deposer">+ Déposer</a></nav>
       </header>
 
       <div className="listingBreadcrumb"><a href="/">Accueil</a><span>›</span><a href="#">{listing.category.name}</a><span>›</span><span>{listing.title}</span></div>
@@ -34,7 +35,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             {listing.images.length ? (
               <img src={listing.images[0].url} alt={listing.images[0].alt ?? listing.title} />
             ) : (
-              <div className="galleryEmpty"><span>📷</span><strong>Photos à venir</strong><small>La gestion des photos est la prochaine fonctionnalité.</small></div>
+              <div className="galleryEmpty"><span>📷</span><strong>Aucune photo</strong><small>Le vendeur n’a pas ajouté de photo.</small></div>
             )}
           </div>
 
@@ -51,7 +52,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             <h1>{listing.title}</h1>
             <strong className="listingPrice">{price}</strong>
             <div className="listingMeta"><span>📍 {listing.territory.name}</span><span>🕒 {listing.publishedAt ? new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(listing.publishedAt) : "Brouillon"}</span></div>
-            <button className="contactSellerButton" type="button">💬 Contacter le vendeur</button>
+            <ContactSellerButton listingId={listing.id} />
             <button className="favoriteDetailButton" type="button">♡ Ajouter aux favoris</button>
           </article>
 
