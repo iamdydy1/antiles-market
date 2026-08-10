@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import CreateListingForm from "@/components/CreateListingForm";
+import SiteHeader from "@/components/SiteHeader";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -17,7 +18,7 @@ export default async function CreateListingPage() {
 
   return (
     <main className="createListingPage">
-      <header className="accountTopbar"><a className="brand" href="/"><span className="brandMark">AM</span><span>Antilles Market</span></a><a className="ghostButton" href="/compte">Mon compte</a></header>
+      <SiteHeader />
       <section className="createListingHeader">
         <div><span className="eyebrow">Vendre sur Antilles Market</span><h1>Déposer une annonce</h1><p>Quelques informations suffisent pour commencer. Vous pourrez gérer l’annonce depuis votre compte.</p></div>
         <div className="formProgress" aria-label="Progression"><span className="active">1 <small>Informations</small></span><span>2 <small>Photos</small></span><span>3 <small>Publication</small></span></div>
