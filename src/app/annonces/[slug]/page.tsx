@@ -1,9 +1,15 @@
+import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import ContactSellerButton from "@/components/ContactSellerButton";
+import FavoriteButton from "@/components/FavoriteButton";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
+  const cookieStore = await cookies();
+  const session = verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value);
+
   const listing = await prisma.listing.findUnique({
     where: { slug },
     include: {
@@ -16,6 +22,10 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
 
   if (!listing || listing.status === "REMOVED") notFound();
 
+  const favorite = session
+    ? await prisma.favorite.findUnique({ where: { userId_listingId: { userId: session.userId, listingId: listing.id } }, select: { userId: true } })
+    : null;
+
   const price = listing.price
     ? new Intl.NumberFormat("fr-FR", { style: "currency", currency: listing.currency, maximumFractionDigits: 2 }).format(Number(listing.price))
     : "Prix sur demande";
@@ -27,7 +37,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
         <nav className="headerActions"><a className="ghostButton" href="/messages">Messages</a><a className="ghostButton" href="/compte">Mon compte</a><a className="primaryButton" href="/deposer">+ Déposer</a></nav>
       </header>
 
-      <div className="listingBreadcrumb"><a href="/">Accueil</a><span>›</span><a href="#">{listing.category.name}</a><span>›</span><span>{listing.title}</span></div>
+      <div className="listingBreadcrumb"><a href="/">Accueil</a><span>›</span><a href={`/recherche?category=${listing.categoryId}`}>{listing.category.name}</a><span>›</span><span>{listing.title}</span></div>
 
       <section className="listingDetailGrid">
         <div>
@@ -53,7 +63,7 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
             <strong className="listingPrice">{price}</strong>
             <div className="listingMeta"><span>📍 {listing.territory.name}</span><span>🕒 {listing.publishedAt ? new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(listing.publishedAt) : "Brouillon"}</span></div>
             <ContactSellerButton listingId={listing.id} />
-            <button className="favoriteDetailButton" type="button">♡ Ajouter aux favoris</button>
+            {session?.userId !== listing.sellerId && <FavoriteButton listingId={listing.id} initialFavorited={Boolean(favorite)} />}
           </article>
 
           <article className="sellerCard">
