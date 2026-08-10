@@ -5,14 +5,12 @@ services:
       dockerfile: Dockerfile
     container_name: antiles-market-app
     restart: unless-stopped
-    env_file: [.env]
+    env_file:
+      - .env
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      REDIS_URL: ${REDIS_URL}
-      AUTH_SECRET: ${AUTH_SECRET}
-      APP_URL: ${APP_URL}
       UPLOAD_DIR: /app/uploads
-    ports: ["${APP_PORT:-3000}:3000"]
+    ports:
+      - "${APP_PORT:-3000}:3000"
     volumes:
       - ${UPLOADS_PATH:-./data/uploads}:/app/uploads
     depends_on:
@@ -31,10 +29,23 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: antiles-market-setup
-    env_file: [.env]
-    environment:
-      DATABASE_URL: ${DATABASE_URL}
-    command: ["sh", "-c", "npx prisma db push && npx tsx prisma/seed.ts"]
+    env_file:
+      - .env
+    command:
+      - sh
+      - -c
+      - |
+        attempt=1
+        until npx prisma db push; do
+          if [ "$attempt" -ge 10 ]; then
+            echo "Database setup failed after 10 attempts."
+            exit 1
+          fi
+          echo "Database not ready yet (attempt $attempt/10), retrying in 5s..."
+          attempt=$((attempt + 1))
+          sleep 5
+        done
+        npx tsx prisma/seed.ts
     depends_on:
       postgres:
         condition: service_healthy
