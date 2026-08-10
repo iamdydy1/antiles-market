@@ -2,16 +2,17 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./marketplace.css";
 import "./admin.css";
+import { getLocale } from "@/lib/i18n";
 
 export const metadata: Metadata = {
-  title: "Antilles Market — Petites annonces des Antilles",
-  description:
-    "Achetez, vendez et échangez facilement entre particuliers et professionnels dans les Antilles.",
+  title: "Antilles Market — Marketplace des Antilles",
+  description: "Achetez, vendez et échangez facilement dans les Antilles et la Caraïbe.",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const locale = await getLocale();
   return (
-    <html lang="fr">
+    <html lang={locale}>
       <body>{children}</body>
     </html>
   );
