@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "./marketplace.css";
 import "./admin.css";
+import "./category-carousel.css";
 import { getLocale } from "@/lib/i18n";
 
 export const metadata: Metadata = {
