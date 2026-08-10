@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { Locale } from "@/lib/i18n";
 import LanguageSwitcher from "./LanguageSwitcher";
 import styles from "./MobileMenu.module.css";
@@ -11,7 +10,6 @@ type UserSummary = { displayName: string; email: string } | null;
 export default function MobileMenu({ user, locale }: { user: UserSummary; locale: Locale }) {
   const [open, setOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
-  const router = useRouter();
   const fr = locale === "fr";
 
   useEffect(() => {
@@ -46,8 +44,9 @@ export default function MobileMenu({ user, locale }: { user: UserSummary; locale
       {user ? <nav className={styles.menu} aria-label={fr ? "Menu du compte" : "Account menu"}>
         <a href="/compte" onClick={() => setOpen(false)}><span className={styles.icon}>👤</span>{fr ? "Mon profil" : "My profile"}</a>
         <a href="/mes-annonces" onClick={() => setOpen(false)}><span className={styles.icon}>📦</span>{fr ? "Mes annonces" : "My listings"}</a>
+        <a href="/offres" onClick={() => setOpen(false)}><span className={styles.icon}>💶</span>{fr ? "Mes offres" : "My offers"}</a>
         <a href="/favoris" onClick={() => setOpen(false)}><span className={styles.icon}>♡</span>{fr ? "Mes favoris" : "My favorites"}</a>
-        <a href="/messages" onClick={() => setOpen(false)}><span className={styles.icon}>💬</span>{fr ? "Messages" : "Messages"}</a>
+        <a href="/messages" onClick={() => setOpen(false)}><span className={styles.icon}>💬</span>Messages</a>
         <a href="/parametres" onClick={() => setOpen(false)}><span className={styles.icon}>⚙️</span>{fr ? "Paramètres" : "Settings"}</a>
         <div className={styles.separator} />
         <button className={styles.logout} type="button" disabled={loggingOut} onClick={logout}><span className={styles.icon}>↪</span>{loggingOut ? (fr ? "Déconnexion…" : "Signing out…") : (fr ? "Se déconnecter" : "Sign out")}</button>
