@@ -38,21 +38,29 @@ Créer une plateforme moderne permettant aux particuliers et professionnels de p
 - Filtres par île, catégorie et fourchette de prix
 - Tri par date et prix
 - Page Mes annonces avec statuts, vues, favoris et conversations
+- Modification d'annonce
+- Statuts réservée / vendue / archivée / republiée
+- Retrait d'annonce par le vendeur
+- Signalement d'annonce avec motif et détails
+- Panneau de modération protégé par rôles
+- Gestion des signalements : résoudre, rejeter, retirer l'annonce
+- Administration utilisateurs : recherche, bannissement et débannissement
+- Gestion des rôles par administrateur avec protections du dernier admin actif
+- Statistiques admin : utilisateurs, bannis, annonces, ventes, messages, conversations et signalements
 - Accueil relié aux vraies catégories, vrais territoires et annonces publiées
 - Route de santé `/api/health`
 - CI GitHub pour contrôler la compilation
 
 ## Fonctionnalités à poursuivre
 
-- Modification et suppression d'annonces
-- Passage d'une annonce en réservée / vendue / archivée
 - Localisation par ville
 - WebSocket / Redis pour notifications push instantanées du chat
-- Signalement et modération
-- Administration
+- Paramètres et modification du profil utilisateur
+- Notifications
 - Comptes professionnels
 - Mise en avant d'annonces
-- Notifications
+- Sécurité et limitation de débit renforcées
+- Préparation du premier déploiement de test Unraid
 
 ## Démarrage avec Docker
 
