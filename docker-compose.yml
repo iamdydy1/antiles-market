@@ -5,22 +5,40 @@ services:
       dockerfile: Dockerfile
     container_name: antiles-market-app
     restart: unless-stopped
-    env_file:
-      - .env
+    env_file: [.env]
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       AUTH_SECRET: ${AUTH_SECRET}
       APP_URL: ${APP_URL}
-    ports:
-      - "3000:3000"
+      UPLOAD_DIR: /app/uploads
+    ports: ["${APP_PORT:-3000}:3000"]
     volumes:
-      - uploads:/app/uploads
+      - ${UPLOADS_PATH:-./data/uploads}:/app/uploads
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  setup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: antiles-market-setup
+    env_file: [.env]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    command: ["sh", "-c", "npx prisma db push && npx tsx prisma/seed.ts"]
     depends_on:
       postgres:
         condition: service_healthy
-      redis:
-        condition: service_healthy
+    restart: "no"
 
   postgres:
     image: postgres:17-alpine
@@ -31,12 +49,12 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${POSTGRES_PATH:-./data/postgres}:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
   redis:
     image: redis:8-alpine
@@ -44,14 +62,9 @@ services:
     restart: unless-stopped
     command: redis-server --appendonly yes
     volumes:
-      - redis_data:/data
+      - ${REDIS_PATH:-./data/redis}:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
-
-volumes:
-  postgres_data:
-  redis_data:
-  uploads:
+      retries: 10
