@@ -2,53 +2,30 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import LogoutButton from "@/components/LogoutButton";
 import SettingsForm from "@/components/SettingsForm";
+import SiteHeader from "@/components/SiteHeader";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
+import { getDictionary, getLocale } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 
 export default async function SettingsPage() {
-  const cookieStore = await cookies();
+  const [cookieStore, locale] = await Promise.all([cookies(), getLocale()]);
+  const t = getDictionary(locale);
   const session = verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value);
   if (!session) redirect("/connexion");
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.userId },
-    select: { displayName: true, email: true, phone: true, role: true, createdAt: true },
-  });
+  const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { displayName: true, email: true, phone: true, role: true, createdAt: true } });
   if (!user) redirect("/connexion");
+  const dateLocale = locale === "fr" ? "fr-FR" : "en-US";
 
-  return (
-    <main className="accountPage">
-      <header className="accountTopbar"><a className="brand" href="/"><span className="brandMark">AM</span><span>Antilles Market</span></a><a className="primaryButton" href="/deposer">+ Déposer une annonce</a></header>
-      <section className="accountHero"><div className="accountAvatar">{user.displayName.slice(0, 1).toUpperCase()}</div><div><span className="eyebrow">Mon espace</span><h1>Paramètres</h1><p>Gérez la sécurité et les informations importantes de votre compte.</p></div></section>
-      <div className="accountLayout">
-        <aside className="accountMenu">
-          <a href="/compte">👤 Mon profil</a>
-          <a href="/mes-annonces">📦 Mes annonces</a>
-          <a href="/favoris">♡ Mes favoris</a>
-          <a href="/messages">💬 Messages</a>
-          <a className="active" href="/parametres">⚙️ Paramètres</a>
-          <LogoutButton />
-        </aside>
-        <section className="accountContent">
-          <article className="profileCard">
-            <div className="profileCardHead"><div><span className="eyebrow">Compte</span><h2>Informations du compte</h2></div></div>
-            <dl className="profileDetails">
-              <div><dt>E-mail</dt><dd>{user.email}</dd></div>
-              <div><dt>Téléphone</dt><dd>{user.phone ?? "Non renseigné"}</dd></div>
-              <div><dt>Type de compte</dt><dd>{user.role === "USER" ? "Particulier" : user.role}</dd></div>
-              <div><dt>Membre depuis</dt><dd>{new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(user.createdAt)}</dd></div>
-            </dl>
-          </article>
-          <article className="profileCard">
-            <div className="profileCardHead"><div><span className="eyebrow">Sécurité</span><h2>Changer mon mot de passe</h2><p>Utilisez votre mot de passe actuel pour confirmer la modification.</p></div></div>
-            <SettingsForm />
-          </article>
-          <article className="profileCard">
-            <div className="profileCardHead"><div><span className="eyebrow">À venir</span><h2>Autres paramètres</h2></div></div>
-            <p>Modification de l’e-mail, préférences de notifications et suppression du compte seront ajoutées après les tests de la V1.</p>
-          </article>
-        </section>
-      </div>
-    </main>
-  );
+  return <main className="accountPage">
+    <SiteHeader />
+    <section className="accountHero"><div className="accountAvatar">{user.displayName.slice(0,1).toUpperCase()}</div><div><span className="eyebrow">{t.account.space}</span><h1>{t.settings.title}</h1><p>{t.settings.intro}</p></div></section>
+    <div className="accountLayout">
+      <aside className="accountMenu"><a href="/compte">👤 {t.nav.profile}</a><a href="/mes-annonces">📦 {t.nav.listings}</a><a href="/offres">💶 {t.nav.offers}</a><a href="/favoris">♡ {t.nav.favorites}</a><a href="/messages">💬 {t.nav.messages}</a><a className="active" href="/parametres">⚙️ {t.nav.settings}</a><LogoutButton /></aside>
+      <section className="accountContent">
+        <article className="profileCard"><div className="profileCardHead"><div><span className="eyebrow">{t.settings.account}</span><h2>{t.settings.accountInfo}</h2></div></div><dl className="profileDetails"><div><dt>{t.account.email}</dt><dd>{user.email}</dd></div><div><dt>{t.account.phone}</dt><dd>{user.phone ?? t.common.noPhone}</dd></div><div><dt>{t.account.accountType}</dt><dd>{user.role === "USER" ? t.common.privateAccount : user.role}</dd></div><div><dt>{t.account.memberSince}</dt><dd>{new Intl.DateTimeFormat(dateLocale,{month:"long",year:"numeric"}).format(user.createdAt)}</dd></div></dl></article>
+        <article className="profileCard"><div className="profileCardHead"><div><span className="eyebrow">{t.settings.security}</span><h2>{t.settings.changePassword}</h2><p>{t.settings.passwordHelp}</p></div></div><SettingsForm /></article>
+        <article className="profileCard"><div className="profileCardHead"><div><span className="eyebrow">{t.settings.comingSoon}</span><h2>{t.settings.otherSettings}</h2></div></div><p>{t.settings.comingText}</p></article>
+      </section>
+    </div>
+  </main>;
 }
