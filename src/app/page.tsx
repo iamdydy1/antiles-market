@@ -1,41 +1,27 @@
 import SiteHeader from "@/components/SiteHeader";
+import { categoryLabel, getDictionary, getLocale } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  const locale = await getLocale();
+  const t = getDictionary(locale);
+  const dateLocale = locale === "fr" ? "fr-FR" : "en-US";
   const [territories, categories, recentListings] = await Promise.all([
     prisma.territory.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true } }),
-    prisma.category.findMany({ where: { isActive: true, parentId: null }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], take: 8, select: { id: true, name: true, icon: true } }),
+    prisma.category.findMany({ where: { isActive: true, parentId: null }, orderBy: [{ sortOrder: "asc" }, { name: "asc" }], take: 8, select: { id: true, name: true, slug: true, icon: true } }),
     prisma.listing.findMany({ where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" }, take: 6, include: { territory: { select: { name: true } }, images: { orderBy: { position: "asc" }, take: 1 } } }),
   ]);
 
-  return (
-    <main>
-      <SiteHeader />
-
-      <section className="hero">
-        <div className="heroOverlay" />
-        <div className="heroInner">
-          <div className="heroCopy"><span className="eyebrow heroEyebrow">100% pensé pour les Antilles</span><h1>La marketplace<br />des Antilles.</h1><p>Achetez, vendez et échangez près de chez vous. Véhicules, immobilier, multimédia, services et bien plus encore, réunis sur une seule plateforme.</p></div>
-          <form className="searchCard" action="/recherche" method="get">
-            <label><span>Que recherchez-vous ?</span><input name="q" placeholder="Voiture, appartement, téléphone…" /></label>
-            <label><span>Catégorie</span><select name="category" defaultValue=""><option value="">Toutes les catégories</option>{categories.map((category) => <option value={category.id} key={category.id}>{category.icon} {category.name}</option>)}</select></label>
-            <label><span>Où ?</span><select name="territory" defaultValue=""><option value="">Toutes les îles</option>{territories.map((territory) => <option value={territory.id} key={territory.id}>{territory.name}</option>)}</select></label>
-            <button className="searchButton" type="submit">Rechercher</button>
-          </form>
-          <div className="trustBar"><span>🌴 <b>100% Antilles</b><small>Communauté locale</small></span><span>💬 <b>Chat intégré</b><small>Discutez directement</small></span><span>🛡️ <b>Modération</b><small>Une plateforme plus sûre</small></span><span>✨ <b>Publication simple</b><small>En quelques minutes</small></span></div>
-        </div>
-      </section>
-
-      <section className="sectionShell"><div className="sectionHeading"><div><span className="eyebrow">Explorer</span><h2>Catégories populaires</h2></div><a href="/recherche">Voir toutes les catégories →</a></div><div className="categoryGrid">{categories.map((category) => <a className="categoryCard" href={`/recherche?category=${category.id}`} key={category.id}><span className="categoryIcon">{category.icon ?? "•"}</span><span>{category.name}</span></a>)}</div></section>
-
-      <section className="sectionShell"><div className="sectionHeading"><div><span className="eyebrow">Tout juste publiées</span><h2>Annonces récentes</h2></div><a href="/recherche">Voir toutes les annonces →</a></div>
-        {recentListings.length ? <div className="listingGrid">{recentListings.map((listing) => <a className="listingCard" href={`/annonces/${listing.slug}`} key={listing.id}><div className="listingImage">{listing.images[0] ? <img src={listing.images[0].url} alt={listing.title} /> : <span>📷 Aucune photo</span>}</div><div className="listingBody"><h3>{listing.title}</h3><strong>{listing.price ? new Intl.NumberFormat("fr-FR", { style: "currency", currency: listing.currency }).format(Number(listing.price)) : "Prix sur demande"}</strong><span>📍 {listing.territory.name}</span><small>{listing.publishedAt ? new Intl.DateTimeFormat("fr-FR", { dateStyle: "medium" }).format(listing.publishedAt) : "Publié récemment"}</small></div></a>)}</div> : <div className="emptyStateCard"><span>🌴</span><h2>Les premières annonces arrivent bientôt</h2><p>Soyez parmi les premiers à publier sur Antilles Market.</p><a className="primaryButton" href="/deposer">Déposer une annonce</a></div>}
-      </section>
-
-      <section className="sellBanner"><div><span className="eyebrow">Simple et local</span><h2>Vous avez quelque chose à vendre ?</h2><p>Créez votre annonce en quelques minutes et échangez directement via la messagerie du site.</p></div><a className="lightButton" href="/deposer">Déposer une annonce</a></section>
-      <footer><div className="brand"><span className="brandMark">AM</span><span>Antilles Market</span></div><p>La marketplace locale des Antilles.</p><small>© 2026 Antilles Market. Tous droits réservés.</small></footer>
-    </main>
-  );
+  return <main>
+    <SiteHeader />
+    <section className="hero"><div className="heroOverlay" /><div className="heroInner"><div className="heroCopy"><span className="eyebrow heroEyebrow">{t.home.eyebrow}</span><h1>{t.home.title1}<br />{t.home.title2}</h1><p>{t.home.intro}</p></div>
+      <form className="searchCard" action="/recherche" method="get"><label><span>{t.home.searchWhat}</span><input name="q" placeholder={t.home.searchPlaceholder}/></label><label><span>{t.home.category}</span><select name="category" defaultValue=""><option value="">{t.home.allCategories}</option>{categories.map(c=><option value={c.id} key={c.id}>{c.icon} {categoryLabel(locale,c.slug,c.name)}</option>)}</select></label><label><span>{t.home.where}</span><select name="territory" defaultValue=""><option value="">{t.home.allIslands}</option>{territories.map(ti=><option value={ti.id} key={ti.id}>{ti.name}</option>)}</select></label><button className="searchButton" type="submit">{t.home.search}</button></form>
+      <div className="trustBar"><span>🌴 <b>{t.home.local}</b><small>{t.home.localSub}</small></span><span>💬 <b>{t.home.chat}</b><small>{t.home.chatSub}</small></span><span>🛡️ <b>{t.home.moderation}</b><small>{t.home.moderationSub}</small></span><span>✨ <b>{t.home.easy}</b><small>{t.home.easySub}</small></span></div></div></section>
+    <section className="sectionShell"><div className="sectionHeading"><div><span className="eyebrow">{t.home.explore}</span><h2>{t.home.popular}</h2></div><a href="/recherche">{t.home.allCategoriesLink}</a></div><div className="categoryGrid">{categories.map(c=><a className="categoryCard" href={`/recherche?category=${c.id}`} key={c.id}><span className="categoryIcon">{c.icon??"•"}</span><span>{categoryLabel(locale,c.slug,c.name)}</span></a>)}</div></section>
+    <section className="sectionShell"><div className="sectionHeading"><div><span className="eyebrow">{t.home.recentEyebrow}</span><h2>{t.home.recent}</h2></div><a href="/recherche">{t.home.allListings}</a></div>{recentListings.length?<div className="listingGrid">{recentListings.map(l=><a className="listingCard" href={`/annonces/${l.slug}`} key={l.id}><div className="listingImage">{l.images[0]?<img src={l.images[0].url} alt={l.title}/>:<span>{t.home.noPhoto}</span>}</div><div className="listingBody"><h3>{l.title}</h3><strong>{l.price?new Intl.NumberFormat(dateLocale,{style:"currency",currency:l.currency}).format(Number(l.price)):t.home.onRequest}</strong><span>📍 {l.territory.name}</span><small>{l.publishedAt?new Intl.DateTimeFormat(dateLocale,{dateStyle:"medium"}).format(l.publishedAt):t.home.recentDate}</small></div></a>)}</div>:<div className="emptyStateCard"><span>🌴</span><h2>{t.home.emptyTitle}</h2><p>{t.home.emptyText}</p><a className="primaryButton" href="/deposer">{t.nav.deposit}</a></div>}</section>
+    <section className="sellBanner"><div><span className="eyebrow">{t.home.sellEyebrow}</span><h2>{t.home.sellTitle}</h2><p>{t.home.sellText}</p></div><a className="lightButton" href="/deposer">{t.nav.deposit}</a></section>
+    <footer><div className="brand"><span className="brandMark">AM</span><span>Antilles Market</span></div><p>{t.home.footer}</p><small>© 2026 Antilles Market. {locale==="fr"?"Tous droits réservés.":"All rights reserved."}</small></footer>
+  </main>;
 }
