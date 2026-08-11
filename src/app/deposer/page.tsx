@@ -27,12 +27,7 @@ export default async function CreateListingPage() {
       <div>
         <span className="eyebrow">{fr ? "Vendre sur Antilles Market" : "Sell on Antilles Market"}</span>
         <h1>{fr ? "Déposer une annonce" : "Post a listing"}</h1>
-        <p>{fr ? "Quelques informations suffisent pour commencer. Vous pourrez gérer l’annonce depuis votre compte." : "A few details are enough to get started. You can manage the listing from your account."}</p>
-      </div>
-      <div className="formProgress" aria-label={fr ? "Progression" : "Progress"}>
-        <span className="active">1 <small>{fr ? "Informations" : "Details"}</small></span>
-        <span>2 <small>{fr ? "Photos" : "Photos"}</small></span>
-        <span>3 <small>{fr ? "Publication" : "Publish"}</small></span>
+        <p>{fr ? "Créez votre annonce en trois étapes simples. Vos informations restent enregistrées lorsque vous passez d’une étape à l’autre." : "Create your listing in three simple steps. Your information stays saved as you move between steps."}</p>
       </div>
     </section>
     {territories.length && categories.length ? <CreateListingForm territories={territories} categories={categories} locations={locations} locale={locale} /> : <div className="setupNotice"><strong>{fr ? "Catalogue en cours d’initialisation." : "Catalog is being initialized."}</strong><p>{fr ? "Les territoires et catégories doivent être chargés avant la première annonce." : "Territories and categories must be loaded before the first listing."}</p></div>}
