@@ -13,6 +13,11 @@ enum UserRole {
   ADMIN
 }
 
+enum AccountType {
+  PRIVATE
+  PROFESSIONAL
+}
+
 enum ListingStatus {
   DRAFT
   PUBLISHED
@@ -52,6 +57,10 @@ model User {
   phone                 String?
   avatarUrl             String?
   role                   UserRole                  @default(USER)
+  accountType            AccountType               @default(PRIVATE)
+  companyName            String?
+  businessId             String?
+  professionalPhone      String?
   emailVerifiedAt       DateTime?
   phoneVerifiedAt       DateTime?
   isBanned              Boolean                   @default(false)
@@ -68,6 +77,7 @@ model User {
   offersMade            Offer[]                   @relation("OfferMaker")
 
   @@index([createdAt])
+  @@index([accountType])
 }
 
 model Territory {
