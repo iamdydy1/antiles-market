@@ -3,12 +3,13 @@ import { redirect } from "next/navigation";
 import CreateListingForm from "@/components/CreateListingForm";
 import SiteHeader from "@/components/SiteHeader";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
+import { getLocale } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function CreateListingPage() {
-  const cookieStore = await cookies();
+  const [cookieStore, locale] = await Promise.all([cookies(), getLocale()]);
   const session = verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value);
   if (!session) redirect("/connexion");
 
@@ -18,5 +19,22 @@ export default async function CreateListingPage() {
     prisma.location.findMany({ orderBy: { name: "asc" }, select: { id: true, name: true, territoryId: true } }),
   ]);
 
-  return <main className="createListingPage"><SiteHeader /><section className="createListingHeader"><div><span className="eyebrow">Vendre sur Antilles Market</span><h1>Déposer une annonce</h1><p>Quelques informations suffisent pour commencer. Vous pourrez gérer l’annonce depuis votre compte.</p></div><div className="formProgress" aria-label="Progression"><span className="active">1 <small>Informations</small></span><span>2 <small>Photos</small></span><span>3 <small>Publication</small></span></div></section>{territories.length && categories.length ? <CreateListingForm territories={territories} categories={categories} locations={locations} /> : <div className="setupNotice"><strong>Catalogue en cours d’initialisation.</strong><p>Les territoires et catégories doivent être chargés avant la première annonce.</p></div>}</main>;
+  const fr = locale === "fr";
+
+  return <main className="createListingPage">
+    <SiteHeader />
+    <section className="createListingHeader">
+      <div>
+        <span className="eyebrow">{fr ? "Vendre sur Antilles Market" : "Sell on Antilles Market"}</span>
+        <h1>{fr ? "Déposer une annonce" : "Post a listing"}</h1>
+        <p>{fr ? "Quelques informations suffisent pour commencer. Vous pourrez gérer l’annonce depuis votre compte." : "A few details are enough to get started. You can manage the listing from your account."}</p>
+      </div>
+      <div className="formProgress" aria-label={fr ? "Progression" : "Progress"}>
+        <span className="active">1 <small>{fr ? "Informations" : "Details"}</small></span>
+        <span>2 <small>{fr ? "Photos" : "Photos"}</small></span>
+        <span>3 <small>{fr ? "Publication" : "Publish"}</small></span>
+      </div>
+    </section>
+    {territories.length && categories.length ? <CreateListingForm territories={territories} categories={categories} locations={locations} locale={locale} /> : <div className="setupNotice"><strong>{fr ? "Catalogue en cours d’initialisation." : "Catalog is being initialized."}</strong><p>{fr ? "Les territoires et catégories doivent être chargés avant la première annonce." : "Territories and categories must be loaded before the first listing."}</p></div>}
+  </main>;
 }
