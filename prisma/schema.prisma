@@ -134,6 +134,7 @@ model Listing {
   conversations  Conversation[]
   reports        Report[]
   offers         Offer[]
+  vehicleMileage Int?
   eventStartAt   DateTime?
   eventEndAt     DateTime?
   eventVenue     String?
@@ -149,6 +150,7 @@ model Listing {
   @@index([territoryId, categoryId])
   @@index([sellerId])
   @@index([price])
+  @@index([vehicleMileage])
   @@index([eventStartAt, eventEndAt])
 }
 
