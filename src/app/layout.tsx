@@ -4,6 +4,7 @@ import "./marketplace.css";
 import "./admin.css";
 import "./category-carousel.css";
 import "./account-type.css";
+import "./listing-wizard.css";
 import { getLocale } from "@/lib/i18n";
 
 export const metadata: Metadata = {
