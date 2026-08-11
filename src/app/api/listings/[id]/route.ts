@@ -10,6 +10,7 @@ const updateSchema = z.object({
   price: z.union([z.string(), z.number()]).optional(),
   categoryId: z.string().min(1).optional(),
   territoryId: z.string().min(1).optional(),
+  vehicleMileage: z.union([z.string(), z.number(), z.null()]).optional(),
   status: z.enum(["PUBLISHED", "RESERVED", "SOLD", "ARCHIVED"]).optional(),
 });
 
@@ -23,7 +24,6 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   try {
     const userId = await getSessionUser();
     if (!userId) return NextResponse.json({ error: "Connexion requise." }, { status: 401 });
-
     const { id } = await params;
     const listing = await prisma.listing.findUnique({ where: { id }, select: { sellerId: true } });
     if (!listing) return NextResponse.json({ error: "Annonce introuvable." }, { status: 404 });
@@ -31,10 +31,17 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const input = updateSchema.parse(await request.json());
     const data: Record<string, unknown> = {};
-
     if (input.title !== undefined) data.title = input.title;
     if (input.description !== undefined) data.description = input.description;
     if (input.status !== undefined) data.status = input.status;
+    if (input.vehicleMileage !== undefined) {
+      if (input.vehicleMileage === null || String(input.vehicleMileage).trim() === "") data.vehicleMileage = null;
+      else {
+        const mileage = Number(input.vehicleMileage);
+        if (!Number.isInteger(mileage) || mileage < 0 || mileage > 5000000) return NextResponse.json({ error: "Kilométrage invalide." }, { status: 400 });
+        data.vehicleMileage = mileage;
+      }
+    }
     if (input.categoryId !== undefined) {
       const category = await prisma.category.findFirst({ where: { id: input.categoryId, isActive: true }, select: { id: true } });
       if (!category) return NextResponse.json({ error: "Catégorie invalide." }, { status: 400 });
@@ -48,9 +55,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
     if (input.price !== undefined) {
       const numericPrice = Number(String(input.price).replace(",", "."));
-      if (!Number.isFinite(numericPrice) || numericPrice < 0 || numericPrice > 999999999) {
-        return NextResponse.json({ error: "Prix invalide." }, { status: 400 });
-      }
+      if (!Number.isFinite(numericPrice) || numericPrice < 0 || numericPrice > 999999999) return NextResponse.json({ error: "Prix invalide." }, { status: 400 });
       data.price = numericPrice;
     }
 
@@ -66,12 +71,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   const userId = await getSessionUser();
   if (!userId) return NextResponse.json({ error: "Connexion requise." }, { status: 401 });
-
   const { id } = await params;
   const listing = await prisma.listing.findUnique({ where: { id }, select: { sellerId: true } });
   if (!listing) return NextResponse.json({ error: "Annonce introuvable." }, { status: 404 });
   if (listing.sellerId !== userId) return NextResponse.json({ error: "Action non autorisée." }, { status: 403 });
-
   await prisma.listing.update({ where: { id }, data: { status: "REMOVED" } });
   return NextResponse.json({ ok: true });
 }
