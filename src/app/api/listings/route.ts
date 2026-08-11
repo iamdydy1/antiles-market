@@ -3,6 +3,99 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-const schema=z.object({title:z.string().trim().min(5).max(120),description:z.string().trim().min(20).max(5000),price:z.union([z.string(),z.number()]).transform(v=>String(v).trim()),territoryId:z.string().min(1),locationId:z.string().optional(),categoryId:z.string().min(1),eventStartAt:z.string().optional(),eventEndAt:z.string().optional(),eventVenue:z.string().trim().max(160).optional(),eventOrganizer:z.string().trim().max(120).optional(),eventUrl:z.union([z.string().url(),z.literal("")]).optional(),eventCapacity:z.union([z.string(),z.number()]).optional(),eventIsFree:z.boolean().optional()});
-function slugify(v:string){return v.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,70)}
-export async function POST(request:Request){try{const cs=await cookies();const session=verifySessionToken(cs.get(SESSION_COOKIE)?.value);if(!session)return NextResponse.json({error:"Connexion requise."},{status:401});const user=await prisma.user.findUnique({where:{id:session.userId},select:{id:true,isBanned:true}});if(!user||user.isBanned)return NextResponse.json({error:"Compte indisponible."},{status:403});const input=schema.parse(await request.json());let numericPrice=Number(input.price.replace(",","."));if(input.eventIsFree)numericPrice=0;if(!Number.isFinite(numericPrice)||numericPrice<0||numericPrice>999999999)return NextResponse.json({error:"Prix invalide."},{status:400});const [territory,category,location]=await Promise.all([prisma.territory.findFirst({where:{id:input.territoryId,isActive:true},select:{id:true,currency:true}}),prisma.category.findFirst({where:{id:input.categoryId,isActive:true},select:{id:true,slug:true,parent:{select:{slug:true}}}}),input.locationId?prisma.location.findFirst({where:{id:input.locationId,territoryId:input.territoryId},select:{id:true}}):Promise.resolve(null)]);if(!territory||!category||(input.locationId&&!location))return NextResponse.json({error:"Île, ville ou catégorie invalide."},{status:400});const isEvent=category.slug.startsWith("evenements-sorties")||category.parent?.slug==="evenements-sorties";let eventStartAt:Date|undefined,eventEndAt:Date|undefined;if(isEvent){if(!input.eventStartAt||!input.eventEndAt)return NextResponse.json({error:"Les dates de début et de fin de l’événement sont obligatoires."},{status:400});eventStartAt=new Date(input.eventStartAt);eventEndAt=new Date(input.eventEndAt);if(Number.isNaN(eventStartAt.getTime())||Number.isNaN(eventEndAt.getTime())||eventEndAt<=eventStartAt)return NextResponse.json({error:"La date de fin doit être après la date de début."},{status:400});}const cap=input.eventCapacity?Number(input.eventCapacity):undefined;if(cap!==undefined&&(!Number.isInteger(cap)||cap<1))return NextResponse.json({error:"Capacité invalide."},{status:400});const listing=await prisma.listing.create({data:{title:input.title,slug:`${slugify(input.title)}-${crypto.randomUUID().slice(0,8)}`,description:input.description,price:numericPrice,currency:territory.currency,status:"PUBLISHED",publishedAt:new Date(),sellerId:user.id,territoryId:territory.id,locationId:location?.id,categoryId:category.id,eventStartAt,eventEndAt,eventVenue:isEvent?input.eventVenue||null:null,eventOrganizer:isEvent?input.eventOrganizer||null:null,eventUrl:isEvent?input.eventUrl||null:null,eventCapacity:isEvent?cap:null,eventIsFree:isEvent?!!input.eventIsFree:false},select:{id:true,slug:true,title:true,status:true}});return NextResponse.json({listing},{status:201});}catch(error){if(error instanceof z.ZodError)return NextResponse.json({error:"Vérifiez les informations de votre annonce."},{status:400});console.error("listing creation error",error);return NextResponse.json({error:"Impossible de publier l’annonce."},{status:500});}}
+
+const schema = z.object({
+  title: z.string().trim().min(5).max(120),
+  description: z.string().trim().min(20).max(5000),
+  price: z.union([z.string(), z.number()]).transform((v) => String(v).trim()),
+  territoryId: z.string().min(1),
+  locationId: z.string().optional(),
+  categoryId: z.string().min(1),
+  vehicleMileage: z.union([z.string(), z.number()]).optional(),
+  eventStartAt: z.string().optional(),
+  eventEndAt: z.string().optional(),
+  eventVenue: z.string().trim().max(160).optional(),
+  eventOrganizer: z.string().trim().max(120).optional(),
+  eventUrl: z.union([z.string().url(), z.literal("")]).optional(),
+  eventCapacity: z.union([z.string(), z.number()]).optional(),
+  eventIsFree: z.boolean().optional(),
+});
+
+function slugify(v: string) {
+  return v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 70);
+}
+
+export async function POST(request: Request) {
+  try {
+    const cs = await cookies();
+    const session = verifySessionToken(cs.get(SESSION_COOKIE)?.value);
+    if (!session) return NextResponse.json({ error: "Connexion requise." }, { status: 401 });
+
+    const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { id: true, isBanned: true } });
+    if (!user || user.isBanned) return NextResponse.json({ error: "Compte indisponible." }, { status: 403 });
+
+    const input = schema.parse(await request.json());
+    let numericPrice = Number(input.price.replace(",", "."));
+    if (input.eventIsFree) numericPrice = 0;
+    if (!Number.isFinite(numericPrice) || numericPrice < 0 || numericPrice > 999999999) return NextResponse.json({ error: "Prix invalide." }, { status: 400 });
+
+    const [territory, category, location] = await Promise.all([
+      prisma.territory.findFirst({ where: { id: input.territoryId, isActive: true }, select: { id: true, currency: true } }),
+      prisma.category.findFirst({ where: { id: input.categoryId, isActive: true }, select: { id: true, slug: true, parent: { select: { slug: true } } } }),
+      input.locationId ? prisma.location.findFirst({ where: { id: input.locationId, territoryId: input.territoryId }, select: { id: true } }) : Promise.resolve(null),
+    ]);
+
+    if (!territory || !category || (input.locationId && !location)) return NextResponse.json({ error: "Île, ville ou catégorie invalide." }, { status: 400 });
+
+    const isVehicle = category.slug.startsWith("vehicules") || category.parent?.slug === "vehicules";
+    let vehicleMileage: number | undefined;
+    if (isVehicle && input.vehicleMileage !== undefined && String(input.vehicleMileage).trim() !== "") {
+      vehicleMileage = Number(input.vehicleMileage);
+      if (!Number.isInteger(vehicleMileage) || vehicleMileage < 0 || vehicleMileage > 5000000) return NextResponse.json({ error: "Kilométrage invalide." }, { status: 400 });
+    }
+
+    const isEvent = category.slug.startsWith("evenements-sorties") || category.parent?.slug === "evenements-sorties";
+    let eventStartAt: Date | undefined;
+    let eventEndAt: Date | undefined;
+    if (isEvent) {
+      if (!input.eventStartAt || !input.eventEndAt) return NextResponse.json({ error: "Les dates de début et de fin de l’événement sont obligatoires." }, { status: 400 });
+      eventStartAt = new Date(input.eventStartAt);
+      eventEndAt = new Date(input.eventEndAt);
+      if (Number.isNaN(eventStartAt.getTime()) || Number.isNaN(eventEndAt.getTime()) || eventEndAt <= eventStartAt) return NextResponse.json({ error: "La date de fin doit être après la date de début." }, { status: 400 });
+    }
+
+    const cap = input.eventCapacity ? Number(input.eventCapacity) : undefined;
+    if (cap !== undefined && (!Number.isInteger(cap) || cap < 1)) return NextResponse.json({ error: "Capacité invalide." }, { status: 400 });
+
+    const listing = await prisma.listing.create({
+      data: {
+        title: input.title,
+        slug: `${slugify(input.title)}-${crypto.randomUUID().slice(0, 8)}`,
+        description: input.description,
+        price: numericPrice,
+        currency: territory.currency,
+        status: "PUBLISHED",
+        publishedAt: new Date(),
+        sellerId: user.id,
+        territoryId: territory.id,
+        locationId: location?.id,
+        categoryId: category.id,
+        vehicleMileage: isVehicle ? vehicleMileage ?? null : null,
+        eventStartAt,
+        eventEndAt,
+        eventVenue: isEvent ? input.eventVenue || null : null,
+        eventOrganizer: isEvent ? input.eventOrganizer || null : null,
+        eventUrl: isEvent ? input.eventUrl || null : null,
+        eventCapacity: isEvent ? cap : null,
+        eventIsFree: isEvent ? !!input.eventIsFree : false,
+      },
+      select: { id: true, slug: true, title: true, status: true },
+    });
+
+    return NextResponse.json({ listing }, { status: 201 });
+  } catch (error) {
+    if (error instanceof z.ZodError) return NextResponse.json({ error: "Vérifiez les informations de votre annonce." }, { status: 400 });
+    console.error("listing creation error", error);
+    return NextResponse.json({ error: "Impossible de publier l’annonce." }, { status: 500 });
+  }
+}
