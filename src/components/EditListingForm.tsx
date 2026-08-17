@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 type Territory = { id: string; name: string; currency?: string };
 type Category = { id: string; name: string; slug: string; icon?: string | null; parentId?: string | null; parent?: { slug: string } | null };
 type Location = { id: string; name: string; territoryId: string };
+type ExistingImage = { id: string; url: string };
+type NewPhoto = { id: string; file: File; preview: string };
 type ListingData = {
   id: string;
   title: string;
@@ -22,6 +24,7 @@ type ListingData = {
   eventUrl: string | null;
   eventCapacity: number | null;
   eventIsFree: boolean;
+  images: ExistingImage[];
 };
 
 export default function EditListingForm({ listing, territories, categories, locations, locale }: { listing: ListingData; territories: Territory[]; categories: Category[]; locations: Location[]; locale: "fr" | "en" }) {
@@ -31,6 +34,9 @@ export default function EditListingForm({ listing, territories, categories, loca
   const [locationId, setLocationId] = useState(listing.locationId ?? "");
   const [categoryId, setCategoryId] = useState(listing.categoryId);
   const [eventIsFree, setEventIsFree] = useState(listing.eventIsFree);
+  const [existingImages, setExistingImages] = useState<ExistingImage[]>(listing.images);
+  const [deletedImageIds, setDeletedImageIds] = useState<string[]>([]);
+  const [newPhotos, setNewPhotos] = useState<NewPhoto[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const currency = useMemo(() => territories.find((item) => item.id === territoryId)?.currency ?? "EUR", [territories, territoryId]);
@@ -38,6 +44,62 @@ export default function EditListingForm({ listing, territories, categories, loca
   const selected = categories.find((item) => item.id === categoryId);
   const isVehicle = selected?.slug.startsWith("vehicules") || selected?.parent?.slug === "vehicules";
   const isEvent = selected?.slug.startsWith("evenements-sorties") || selected?.parent?.slug === "evenements-sorties";
+  const photoCount = existingImages.length + newPhotos.length;
+
+  function addPhotos(files: FileList | null) {
+    if (!files?.length) return;
+    const incoming = Array.from(files);
+    const allowed = new Set(["image/jpeg", "image/png", "image/webp"]);
+    if (incoming.some((file) => !allowed.has(file.type))) {
+      setError(fr ? "Seuls les fichiers JPG, PNG et WebP sont acceptés." : "Only JPG, PNG and WebP files are accepted.");
+      return;
+    }
+    if (incoming.some((file) => file.size > 10 * 1024 * 1024)) {
+      setError(fr ? "Chaque photo doit faire 10 Mo maximum." : "Each photo must be 10 MB or smaller.");
+      return;
+    }
+    if (photoCount + incoming.length > 8) {
+      setError(fr ? "Vous pouvez conserver 8 photos maximum par annonce." : "You can keep up to 8 photos per listing.");
+      return;
+    }
+    setError("");
+    setNewPhotos((current) => [...current, ...incoming.map((file, index) => ({ id: `${file.name}-${file.lastModified}-${Date.now()}-${index}`, file, preview: URL.createObjectURL(file) }))]);
+  }
+
+  function removeExisting(index: number) {
+    const image = existingImages[index];
+    if (!image) return;
+    setDeletedImageIds((current) => [...current, image.id]);
+    setExistingImages((current) => current.filter((_, imageIndex) => imageIndex !== index));
+  }
+
+  function moveExisting(index: number, direction: -1 | 1) {
+    setExistingImages((current) => {
+      const next = [...current];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return current;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
+
+  function removeNewPhoto(index: number) {
+    setNewPhotos((current) => {
+      const photo = current[index];
+      if (photo) URL.revokeObjectURL(photo.preview);
+      return current.filter((_, photoIndex) => photoIndex !== index);
+    });
+  }
+
+  function moveNewPhoto(index: number, direction: -1 | 1) {
+    setNewPhotos((current) => {
+      const next = [...current];
+      const target = index + direction;
+      if (target < 0 || target >= next.length) return current;
+      [next[index], next[target]] = [next[target], next[index]];
+      return next;
+    });
+  }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,6 +136,43 @@ export default function EditListingForm({ listing, territories, categories, loca
         setError(data.error ?? (fr ? "Impossible de modifier l’annonce." : "Unable to update the listing."));
         return;
       }
+
+      for (const imageId of deletedImageIds) {
+        const deleteResponse = await fetch(`/api/listings/${listing.id}/images`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ imageId }),
+        });
+        if (!deleteResponse.ok && deleteResponse.status !== 404) {
+          const imageError = await deleteResponse.json();
+          setError(imageError.error ?? (fr ? "Les informations ont été enregistrées, mais une photo n’a pas pu être supprimée." : "The listing details were saved, but a photo could not be deleted."));
+          return;
+        }
+      }
+
+      const reorderResponse = await fetch(`/api/listings/${listing.id}/images`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageIds: existingImages.map((image) => image.id) }),
+      });
+      if (!reorderResponse.ok) {
+        const imageError = await reorderResponse.json();
+        setError(imageError.error ?? (fr ? "Les informations ont été enregistrées, mais les photos n’ont pas pu être réorganisées." : "The listing details were saved, but the photos could not be reordered."));
+        return;
+      }
+
+      if (newPhotos.length) {
+        const upload = new FormData();
+        newPhotos.forEach((photo) => upload.append("photos", photo.file));
+        const uploadResponse = await fetch(`/api/listings/${listing.id}/images`, { method: "POST", body: upload });
+        if (!uploadResponse.ok) {
+          const imageError = await uploadResponse.json();
+          setError(imageError.error ?? (fr ? "Les informations ont été enregistrées, mais les nouvelles photos n’ont pas pu être ajoutées." : "The listing details were saved, but the new photos could not be added."));
+          return;
+        }
+      }
+
+      newPhotos.forEach((photo) => URL.revokeObjectURL(photo.preview));
       router.push("/mes-annonces");
       router.refresh();
     } catch {
@@ -111,6 +210,23 @@ export default function EditListingForm({ listing, territories, categories, loca
 
       <label className="fullField"><span>{fr ? "Description" : "Description"}</span><textarea name="description" rows={10} minLength={20} maxLength={5000} defaultValue={listing.description} required /></label>
     </div>
+
+    <div className="listingFormSection">
+      <div className="formSectionTitle"><span>📷</span><div><h2>{fr ? "Photos" : "Photos"}</h2><p>{fr ? "Supprimez, réorganisez ou ajoutez des photos. Les modifications seront appliquées lorsque vous enregistrez l’annonce." : "Remove, reorder or add photos. Changes are applied when you save the listing."}</p></div></div>
+      {existingImages.length > 0 && <div className="wizardPhotoGrid">{existingImages.map((image, index) => <div className="wizardPhotoCard" key={image.id}>
+        <img src={image.url} alt={fr ? `Photo actuelle ${index + 1}` : `Current photo ${index + 1}`} />
+        {index === 0 && <span className="wizardPhotoMainBadge">{fr ? "Photo principale" : "Main photo"}</span>}
+        <div className="wizardPhotoActions"><button type="button" onClick={() => moveExisting(index, -1)} disabled={index === 0 || loading} aria-label={fr ? "Déplacer à gauche" : "Move left"}>←</button><button type="button" onClick={() => moveExisting(index, 1)} disabled={index === existingImages.length - 1 || loading} aria-label={fr ? "Déplacer à droite" : "Move right"}>→</button><button type="button" className="remove" onClick={() => removeExisting(index)} disabled={loading} aria-label={fr ? "Supprimer la photo" : "Remove photo"}>×</button></div>
+      </div>)}</div>}
+
+      {newPhotos.length > 0 && <><small>{fr ? "Nouvelles photos" : "New photos"}</small><div className="wizardPhotoGrid">{newPhotos.map((photo, index) => <div className="wizardPhotoCard" key={photo.id}>
+        <img src={photo.preview} alt={fr ? `Nouvelle photo ${index + 1}` : `New photo ${index + 1}`} />
+        <div className="wizardPhotoActions"><button type="button" onClick={() => moveNewPhoto(index, -1)} disabled={index === 0 || loading} aria-label={fr ? "Déplacer à gauche" : "Move left"}>←</button><button type="button" onClick={() => moveNewPhoto(index, 1)} disabled={index === newPhotos.length - 1 || loading} aria-label={fr ? "Déplacer à droite" : "Move right"}>→</button><button type="button" className="remove" onClick={() => removeNewPhoto(index)} disabled={loading} aria-label={fr ? "Supprimer la photo" : "Remove photo"}>×</button></div>
+      </div>)}</div></>}
+
+      {photoCount < 8 && <label className="photoDropPlaceholder photoUploadInput"><strong>📷 {fr ? "Ajouter des photos" : "Add photos"}</strong><span>JPG, PNG or WebP · 10 MB max</span><span className="photoCount">{fr ? `${photoCount}/8 photo${photoCount > 1 ? "s" : ""}` : `${photoCount}/8 photo${photoCount === 1 ? "" : "s"}`}</span><input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={loading} onChange={(event) => { addPhotos(event.target.files); event.target.value = ""; }} /></label>}
+    </div>
+
     {error && <div className="authError">{error}</div>}
     <div className="listingFormActions"><a className="secondaryButton" href="/mes-annonces">{fr ? "Annuler" : "Cancel"}</a><button className="authSubmit" disabled={loading}>{loading ? (fr ? "Enregistrement…" : "Saving…") : (fr ? "Enregistrer les modifications" : "Save changes")}</button></div>
   </form>;
