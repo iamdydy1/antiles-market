@@ -2,10 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import type { Locale } from "@/lib/i18n";
 
-export default function LogoutButton() {
+export default function LogoutButton({ locale = "fr" }: { locale?: Locale }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const fr = locale === "fr";
 
   async function logout() {
     setLoading(true);
@@ -20,7 +22,7 @@ export default function LogoutButton() {
 
   return (
     <button className="accountLogout" type="button" onClick={logout} disabled={loading}>
-      {loading ? "Déconnexion…" : "Se déconnecter"}
+      {loading ? (fr ? "Déconnexion…" : "Signing out…") : (fr ? "Se déconnecter" : "Sign out")}
     </button>
   );
 }
