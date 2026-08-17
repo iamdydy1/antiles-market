@@ -31,7 +31,7 @@ export default async function AccountPage() {
     <section className="accountHero"><div className="accountAvatar">{initial}</div><div><span className="eyebrow">{t.account.space}</span><h1>{t.account.hello}, {user.displayName}</h1><p>{user.email}</p>{user.accountType === "PROFESSIONAL" && <span className="proBadge">PRO · {user.companyName}</span>}</div></section>
     <div className="accountLayout">
       <aside className="accountMenu">
-        <a className="active" href="/compte">👤 {t.nav.profile}</a><a href="/mes-annonces">📦 {t.nav.listings}</a><a href="/offres">💶 {t.nav.offers}</a><a href="/favoris">♡ {t.nav.favorites}</a><a href="/messages">💬 {t.nav.messages}</a><a href="/parametres">⚙️ {t.nav.settings}</a><LogoutButton />
+        <a className="active" href="/compte">👤 {t.nav.profile}</a><a href="/mes-annonces">📦 {t.nav.listings}</a><a href="/offres">💶 {t.nav.offers}</a><a href="/favoris">♡ {t.nav.favorites}</a><a href="/messages">💬 {t.nav.messages}</a><a href="/parametres">⚙️ {t.nav.settings}</a><LogoutButton locale={locale} />
       </aside>
       <section className="accountContent">
         <div className="accountStats"><a href="/mes-annonces"><strong>{user._count.listings}</strong><span>{t.account.published}</span></a><a href="/favoris"><strong>{user._count.favorites}</strong><span>{t.nav.favorites}</span></a><a href="/messages"><strong>{user._count.messages}</strong><span>{t.account.sentMessages}</span></a></div>
