@@ -22,6 +22,7 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
       select: {
         id: true, title: true, description: true, price: true, categoryId: true, territoryId: true, locationId: true, vehicleMileage: true,
         eventStartAt: true, eventEndAt: true, eventVenue: true, eventOrganizer: true, eventUrl: true, eventCapacity: true, eventIsFree: true,
+        images: { orderBy: { position: "asc" }, select: { id: true, url: true } },
       },
     }),
     prisma.territory.findMany({ where: { isActive: true }, orderBy: { name: "asc" }, select: { id: true, name: true, currency: true } }),
