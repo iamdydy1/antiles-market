@@ -1,0 +1,81 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: antiles-market-app
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      UPLOAD_DIR: /app/uploads
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - ${UPLOADS_PATH:-./data/uploads}:/app/uploads
+    depends_on:
+      setup:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  setup:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: antiles-market-setup
+    env_file:
+      - .env
+    command:
+      - sh
+      - -c
+      - |
+        attempt=1
+        until npx prisma db push; do
+          if [ "$$attempt" -ge 10 ]; then
+            echo "Database setup failed after 10 attempts."
+            exit 1
+          fi
+          echo "Database not ready yet (attempt $$attempt/10), retrying in 5s..."
+          attempt=$$((attempt + 1))
+          sleep 5
+        done
+        npx tsx prisma/seed.ts
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: antiles-market-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - ${POSTGRES_PATH:-./data/postgres}:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    container_name: antiles-market-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - ${REDIS_PATH:-./data/redis}:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
