@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 type Mode = "login" | "register";
 type Locale = "fr" | "en";
 
-export default function AuthForm({ mode, locale = "fr" }: { mode: Mode; locale?: Locale }) {
+export default function AuthForm({ mode, locale = "fr", nextPath = "/compte" }: { mode: Mode; locale?: Locale; nextPath?: string }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -15,6 +15,7 @@ export default function AuthForm({ mode, locale = "fr" }: { mode: Mode; locale?:
   const labels = useMemo(() => ({
     displayName: en ? "Display name" : "Nom affiché",
     email: en ? "Email address" : "Adresse e-mail",
+    emailPlaceholder: en ? "you@example.com" : "vous@exemple.com",
     password: en ? "Password" : "Mot de passe",
     private: en ? "Individual" : "Particulier",
     professional: en ? "Professional" : "Professionnel",
@@ -58,7 +59,7 @@ export default function AuthForm({ mode, locale = "fr" }: { mode: Mode; locale?:
         setError(data.error ?? labels.genericError);
         return;
       }
-      router.push("/compte");
+      router.push(mode === "login" ? nextPath : "/compte");
       router.refresh();
     } catch {
       setError(labels.serverError);
@@ -91,7 +92,7 @@ export default function AuthForm({ mode, locale = "fr" }: { mode: Mode; locale?:
         </div>}
       </>}
 
-      <label><span>{labels.email}</span><input name="email" type="email" placeholder="vous@exemple.com" required autoComplete="email" /></label>
+      <label><span>{labels.email}</span><input name="email" type="email" placeholder={labels.emailPlaceholder} required autoComplete="email" /></label>
       <label><span>{labels.password}</span><input name="password" type="password" minLength={mode === "register" ? 8 : 1} placeholder="••••••••" required autoComplete={mode === "register" ? "new-password" : "current-password"} />{mode === "register" && <small>{labels.minPassword}</small>}</label>
       {error && <div className="authError" role="alert">{error}</div>}
       <button className="authSubmit" type="submit" disabled={loading}>{loading ? labels.wait : mode === "register" ? labels.register : labels.login}</button>
