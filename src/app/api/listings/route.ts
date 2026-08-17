@@ -4,6 +4,11 @@ import { z } from "zod";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+const httpUrl = z.string().url().refine((value) => {
+  const protocol = new URL(value).protocol;
+  return protocol === "http:" || protocol === "https:";
+});
+
 const schema = z.object({
   title: z.string().trim().min(5).max(120),
   description: z.string().trim().min(20).max(5000),
@@ -16,7 +21,7 @@ const schema = z.object({
   eventEndAt: z.string().optional(),
   eventVenue: z.string().trim().max(160).optional(),
   eventOrganizer: z.string().trim().max(120).optional(),
-  eventUrl: z.union([z.string().url(), z.literal("")]).optional(),
+  eventUrl: z.union([httpUrl, z.literal("")]).optional(),
   eventCapacity: z.union([z.string(), z.number()]).optional(),
   eventIsFree: z.boolean().optional(),
 });

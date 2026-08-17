@@ -1,11 +1,13 @@
 import SiteHeader from "@/components/SiteHeader";
 import { categoryLabel, getDictionary, getLocale } from "@/lib/i18n";
+import { archiveExpiredEvents } from "@/lib/listing-maintenance";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const locale = await getLocale();
+  await archiveExpiredEvents();
   const t = getDictionary(locale);
   const dateLocale = locale === "fr" ? "fr-FR" : "en-US";
   const [territories, categories, recentListings] = await Promise.all([
