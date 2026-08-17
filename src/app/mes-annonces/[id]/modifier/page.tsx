@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import EditListingForm from "@/components/EditListingForm";
 import SiteHeader from "@/components/SiteHeader";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
-import { getLocale } from "@/lib/i18n";
+import { categoryLabel, getLocale } from "@/lib/i18n";
 import { prisma } from "@/lib/prisma";
 
 export default async function EditListingPage({ params }: { params: Promise<{ id: string }> }) {
@@ -22,11 +22,12 @@ export default async function EditListingPage({ params }: { params: Promise<{ id
   ]);
 
   if (!listing) notFound();
+  const localizedCategories = categories.map((category) => ({ ...category, name: categoryLabel(locale, category.slug, category.name) }));
   const fr = locale === "fr";
 
   return <main className="createListingPage">
     <SiteHeader />
     <section className="createListingHeader"><div><span className="eyebrow">{fr ? "Gestion vendeur" : "Seller management"}</span><h1>{fr ? "Modifier mon annonce" : "Edit my listing"}</h1><p>{fr ? "Mettez à jour les informations de votre annonce." : "Update your listing details."}</p></div></section>
-    <EditListingForm listing={{ ...listing, price: listing.price ? String(listing.price) : "0" }} territories={territories} categories={categories} locale={locale} />
+    <EditListingForm listing={{ ...listing, price: listing.price ? String(listing.price) : "0" }} territories={territories} categories={localizedCategories} locale={locale} />
   </main>;
 }
