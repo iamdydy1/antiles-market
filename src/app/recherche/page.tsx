@@ -1,5 +1,6 @@
 import SiteHeader from "@/components/SiteHeader";
 import { categoryLabel, getLocale } from "@/lib/i18n";
+import { archiveExpiredEvents } from "@/lib/listing-maintenance";
 import { prisma } from "@/lib/prisma";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -8,6 +9,7 @@ function numeric(value: string | undefined) { if (!value) return undefined; cons
 
 export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
   const [raw, locale] = await Promise.all([searchParams, getLocale()]);
+  await archiveExpiredEvents();
   const fr = locale === "fr";
   const dateLocale = fr ? "fr-FR" : "en-US";
   const copy = fr
@@ -53,6 +55,6 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
       <label><span>{copy.sort}</span><select name="sort" defaultValue={sort}><option value="recent">{copy.recent}</option><option value="price_asc">{copy.priceAsc}</option><option value="price_desc">{copy.priceDesc}</option></select></label>
       <button className="primaryButton" type="submit">{copy.submit}</button>
     </form>
-    <section className="searchResultsShell"><div className="resultsHeading"><div><h2>{listings.length} {listings.length === 1 ? copy.listing : copy.listings}</h2><p>{q ? `${copy.resultsFor} « ${q} »` : copy.allAvailable}</p></div><a href="/recherche">{copy.reset}</a></div>{listings.length === 0 ? <div className="emptyStateCard"><span>🔎</span><h2>{copy.emptyTitle}</h2><p>{copy.emptyText}</p></div> : <div className="resultsGrid">{listings.map((listing) => <a className="resultCard" href={`/annonces/${listing.slug}`} key={listing.id}><div className="resultImage">{listing.images[0] ? <img src={listing.images[0].url} alt={listing.title} /> : <span>📷</span>}</div><div className="resultBody"><small>{listing.category.icon ?? listing.category.parent?.icon} {categoryLabel(locale, listing.category.slug, listing.category.name)}</small><h2>{listing.title}</h2><strong>{listing.price ? new Intl.NumberFormat(dateLocale, { style: "currency", currency: listing.currency }).format(Number(listing.price)) : copy.priceOnRequest}</strong><span>📍 {listing.location?.name ? `${listing.location.name}, ` : ""}{listing.territory.name}</span></div></a>)}</div>}</section>
+    <section className="searchResultsShell"><div className="resultsHeading"><div><h2>{listings.length} {listings.length === 1 ? copy.listing : copy.listings}</h2><p>{q ? `${copy.resultsFor} « ${q} »` : copy.allAvailable}</p></div><a href="/recherche">{copy.reset}</a></div>{listings.length === 0 ? <div className="emptyStateCard"><span>🔎</span><h2>{copy.emptyTitle}</h2><p>{copy.emptyText}</p></div> : <div className="resultsGrid">{listings.map((listing) => <a className="resultCard" href={`/annonces/${listing.slug}`} key={listing.id}><div className="resultImage">{listing.images[0] ? <img src={listing.images[0].url} alt={listing.title} /> : <span>📷</span>}</div><div className="resultBody"><small>{listing.category.icon ?? listing.category.parent?.icon} {categoryLabel(locale, listing.category.slug, listing.category.name)}</small><h2>{listing.title}</h2><strong>{listing.eventIsFree ? (fr ? "Gratuit" : "Free") : listing.price ? new Intl.NumberFormat(dateLocale, { style: "currency", currency: listing.currency }).format(Number(listing.price)) : copy.priceOnRequest}</strong><span>📍 {listing.location?.name ? `${listing.location.name}, ` : ""}{listing.territory.name}</span></div></a>)}</div>}</section>
   </main>;
 }
