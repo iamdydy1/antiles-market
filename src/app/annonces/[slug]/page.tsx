@@ -8,10 +8,12 @@ import ReportListingButton from "@/components/ReportListingButton";
 import SiteHeader from "@/components/SiteHeader";
 import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
 import { categoryLabel, getDictionary, getLocale } from "@/lib/i18n";
+import { archiveExpiredEvents } from "@/lib/listing-maintenance";
 import { prisma } from "@/lib/prisma";
 
 export default async function ListingDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const [{ slug }, cookieStore, locale] = await Promise.all([params, cookies(), getLocale()]);
+  await archiveExpiredEvents();
   const t = getDictionary(locale);
   const session = verifySessionToken(cookieStore.get(SESSION_COOKIE)?.value);
   const listing = await prisma.listing.findUnique({
@@ -31,20 +33,27 @@ export default async function ListingDetailPage({ params }: { params: Promise<{ 
   if ((listing.status === "DRAFT" || listing.status === "ARCHIVED") && !isOwner) notFound();
 
   const dateLocale = locale === "fr" ? "fr-FR" : "en-US";
-  const price = listing.price ? new Intl.NumberFormat(dateLocale, { style: "currency", currency: listing.currency, maximumFractionDigits: 2 }).format(Number(listing.price)) : t.common.priceOnRequest;
+  const isVehicle = listing.category.slug.startsWith("vehicules") || listing.category.parent?.slug === "vehicules";
+  const isEvent = listing.category.slug.startsWith("evenements-sorties") || listing.category.parent?.slug === "evenements-sorties";
+  const price = isEvent && listing.eventIsFree
+    ? (locale === "fr" ? "Gratuit" : "Free")
+    : listing.price
+      ? new Intl.NumberFormat(dateLocale, { style: "currency", currency: listing.currency, maximumFractionDigits: 2 }).format(Number(listing.price))
+      : t.common.priceOnRequest;
   const isFavorite = Array.isArray(listing.favorites) && listing.favorites.length > 0;
   const canOffer = !isOwner && !["SOLD", "ARCHIVED", "REMOVED"].includes(listing.status);
   const statusLabel = listing.status === "RESERVED" ? t.common.reserved : listing.status === "SOLD" ? t.common.sold : listing.status === "ARCHIVED" ? t.common.archived : listing.status === "DRAFT" ? t.common.draft : t.common.available;
-  const isVehicle = listing.category.slug.startsWith("vehicules") || listing.category.parent?.slug === "vehicules";
   const mileage = listing.vehicleMileage !== null && listing.vehicleMileage !== undefined ? new Intl.NumberFormat(dateLocale).format(listing.vehicleMileage) : null;
+  const eventDateFormatter = new Intl.DateTimeFormat(dateLocale, { dateStyle: "full", timeStyle: "short" });
 
   return <main className="listingDetailPage">
     <SiteHeader />
     <div className="listingBreadcrumb"><a href="/">{t.common.home}</a><span>›</span><a href={`/recherche?category=${listing.category.id}`}>{categoryLabel(locale, listing.category.slug, listing.category.name)}</a><span>›</span><span>{listing.title}</span></div>
     <section className="listingDetailGrid"><div>
       {listing.images.length ? <ListingGallery images={listing.images.map((image) => ({ id: image.id, url: image.url, alt: image.alt }))} title={listing.title} locale={locale} /> : <div className="listingGallery"><div className="galleryEmpty"><span>📷</span><strong>{t.common.noPhoto}</strong><small>{t.listing.noPhoto}</small></div></div>}
+      {isEvent && listing.eventStartAt && listing.eventEndAt && <article className="listingDescriptionCard"><span className="eyebrow">{locale === "fr" ? "Événement" : "Event"}</span><h2>{locale === "fr" ? "Informations pratiques" : "Event details"}</h2><div className="listingMeta"><span>🗓️ <strong>{locale === "fr" ? "Début" : "Starts"}:</strong> {eventDateFormatter.format(listing.eventStartAt)}</span><span>🏁 <strong>{locale === "fr" ? "Fin" : "Ends"}:</strong> {eventDateFormatter.format(listing.eventEndAt)}</span>{listing.eventVenue && <span>📍 <strong>{locale === "fr" ? "Lieu" : "Venue"}:</strong> {listing.eventVenue}</span>}{listing.eventOrganizer && <span>👤 <strong>{locale === "fr" ? "Organisateur" : "Organizer"}:</strong> {listing.eventOrganizer}</span>}{listing.eventCapacity && <span>👥 <strong>{locale === "fr" ? "Capacité" : "Capacity"}:</strong> {new Intl.NumberFormat(dateLocale).format(listing.eventCapacity)}</span>}{listing.eventUrl && <span>🎟️ <a href={listing.eventUrl} target="_blank" rel="noreferrer">{locale === "fr" ? "Billetterie / site de l’événement ↗" : "Tickets / event website ↗"}</a></span>}</div></article>}
       <article className="listingDescriptionCard"><span className="eyebrow">{t.listing.description}</span><h2>{t.listing.about}</h2><p>{listing.description}</p></article>
-    </div><aside className="listingAside"><article className="listingInfoCard"><span className="listingCategory">{listing.category.icon ?? listing.category.parent?.icon} {categoryLabel(locale, listing.category.slug, listing.category.name)}</span><h1>{listing.title}</h1><strong className="listingPrice">{price}</strong><div className="listingMeta"><span>📍 {listing.location?.name ? `${listing.location.name}, ` : ""}{listing.territory.name}</span>{isVehicle && mileage && <span>🛣️ {locale === "fr" ? "Kilométrage" : "Mileage"}: {mileage} km</span>}<span>🕒 {listing.publishedAt ? new Intl.DateTimeFormat(dateLocale, { dateStyle: "medium" }).format(listing.publishedAt) : t.common.draft}</span><span>🏷️ {statusLabel}</span></div>{!isOwner && <ContactSellerButton listingId={listing.id} locale={locale} />}{canOffer && <OfferButton listingId={listing.id} currency={listing.currency} locale={locale} />}{isOwner && <a className="secondaryButton" href="/offres">💶 {locale === "fr" ? "Voir les offres reçues" : "View received offers"}</a>}{!isOwner && <FavoriteButton listingId={listing.id} initialFavorited={isFavorite} locale={locale} />}</article>
+    </div><aside className="listingAside"><article className="listingInfoCard"><span className="listingCategory">{listing.category.icon ?? listing.category.parent?.icon} {categoryLabel(locale, listing.category.slug, listing.category.name)}</span><h1>{listing.title}</h1><strong className="listingPrice">{price}</strong><div className="listingMeta"><span>📍 {listing.location?.name ? `${listing.location.name}, ` : ""}{listing.territory.name}</span>{isVehicle && mileage && <span>🛣️ {locale === "fr" ? "Kilométrage" : "Mileage"}: {mileage} km</span>}{isEvent && listing.eventStartAt && <span>🗓️ {eventDateFormatter.format(listing.eventStartAt)}</span>}<span>🕒 {listing.publishedAt ? new Intl.DateTimeFormat(dateLocale, { dateStyle: "medium" }).format(listing.publishedAt) : t.common.draft}</span><span>🏷️ {statusLabel}</span></div>{!isOwner && <ContactSellerButton listingId={listing.id} locale={locale} />}{canOffer && <OfferButton listingId={listing.id} currency={listing.currency} locale={locale} />}{isOwner && <a className="secondaryButton" href="/offres">💶 {locale === "fr" ? "Voir les offres reçues" : "View received offers"}</a>}{!isOwner && <FavoriteButton listingId={listing.id} initialFavorited={isFavorite} locale={locale} />}</article>
       <article className="sellerCard"><div className="sellerAvatar">{listing.seller.displayName.charAt(0).toUpperCase()}</div><div><small>{t.common.seller}</small><strong>{listing.seller.accountType === "PROFESSIONAL" && listing.seller.companyName ? listing.seller.companyName : listing.seller.displayName}</strong>{listing.seller.accountType === "PROFESSIONAL" && <span className="proBadge">✓ PRO · {locale === "fr" ? "Professionnel" : "Professional"}</span>}<span>{t.common.memberSince} {new Intl.DateTimeFormat(dateLocale, { month: "long", year: "numeric" }).format(listing.seller.createdAt)}</span></div><a href={`/vendeurs/${listing.seller.id}`}>{t.listing.viewProfile}</a></article>{!isOwner && <ReportListingButton listingId={listing.id} locale={locale} />}</aside></section>
   </main>;
 }
